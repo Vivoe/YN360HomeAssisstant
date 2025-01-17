@@ -43,6 +43,8 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         if len(device) != 1:
             return self.async_abort(reason="No devices found")
 
+        device = device[0]
+
         uuid = device.address
         await self.async_set_unique_id(uuid)
         self._abort_if_unique_id_configured()

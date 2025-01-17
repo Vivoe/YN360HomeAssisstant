@@ -40,15 +40,14 @@ class YN360Light(LightEntity):
         self._control_uuid = control_uuid
         self._state_payload = PAYLOAD_ON_DEFAULT
 
-    async def send_payload(self, payloads):
+    async def send_payload(self, client, payloads):
         """Send a hex payload to the device."""
         if not isinstance(payloads, list):
             payloads = [payloads]
 
         for payload in payloads:
             data = bytes.fromhex(payload)
-            async with BleakClient(self._ble_client) as client:
-                await client.write_gatt_char(self._control_uuid, data)
+            await client.write_gatt_char(self._control_uuid, data)
 
     @property
     def name(self):
@@ -57,11 +56,13 @@ class YN360Light(LightEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn on."""
-        await self.send_payload([PAYLOAD_FLUSH, self._state_payload])
+        async with BleakClient(self._ble_client) as client:
+            await self.send_payload(client, [PAYLOAD_FLUSH, self._state_payload])
 
     async def async_turn_off(self, **kwargs):
         """Turn off."""
-        await self.send_payload([PAYLOAD_FLUSH, PAYLOAD_OFF])
+        async with BleakClient(self._ble_client) as client:
+            await self.send_payload(client, [PAYLOAD_FLUSH, PAYLOAD_OFF])
 
     def turn_on(self, **kwargs):
         """Turn on, but not implemented."""

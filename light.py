@@ -25,6 +25,11 @@ async def async_setup_entry(
     return True
 
 
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    if entry.entry_id in hass.data[DOMAIN]:
+        del hass.data[DOMAIN][entry.entry_id]
+
+
 class YN360Light(LightEntity):
     """YN360 light entity."""
 

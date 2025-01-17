@@ -1,0 +1,8 @@
+{
+  "domain": "yn360",
+  "name": "YN360 bluetooth client",
+  "version": "0.1.0",
+  "dependencies": [],
+  "iot_class": "assumed_state",
+  "config_flow": true
+}

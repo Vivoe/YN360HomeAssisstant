@@ -35,22 +35,16 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, discovery_info: BluetoothServiceInfoBleak = None
     ) -> ConfigFlowResult:
         """Get Bluetooth stuff somehow."""
-        if discovery_info:
-            LOGGER.info("|".join([str(x) for x in dir(discovery_info)]))
-            uuid = discovery_info.address
-            await self.async_set_unique_id(uuid)
-            self._abort_if_unique_id_configured()
-
-            return self.async_create_entry(
-                title=discovery_info.name, data={"address": uuid}
-            )
 
         discovered_devices = async_discovered_service_info(self.hass)
-        devices = {device.address: device.name for device in discovered_devices}
-        if not devices:
+        device = [
+            device for device in discovered_devices if device.name == "YONGNUO LED"
+        ]
+        if len(device) != 1:
             return self.async_abort(reason="No devices found")
 
-        return self.async_show_form(
-            step_id="bluetooth",
-            data_schema=vol.Schema({vol.Required("device"): vol.In(devices)}),
-        )
+        uuid = device.address
+        await self.async_set_unique_id(uuid)
+        self._abort_if_unique_id_configured()
+
+        return self.async_create_entry(title=device.name, data={"address": uuid})

@@ -1,4 +1,4 @@
-"""Test file."""
+"""Config flow to setup YN360 integration."""
 
 import logging
 from typing import Any
@@ -64,3 +64,7 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(
             title=device.name, data={"uuid": uuid, "control_uuid": control_uuid}
         )
+
+    def is_matching(self, other_flow: BluetoothServiceInfoBleak) -> bool:
+        """Check if discovery info matches the YN360 device."""
+        return other_flow.name == "YONGNUO LED"

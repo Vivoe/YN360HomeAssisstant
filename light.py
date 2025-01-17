@@ -17,7 +17,7 @@ async def async_setup_entry(
     """Set up the YN360 light platform."""
     config = hass.data[DOMAIN][config_entry.entry_id]
     LOGGER.error(str(config))
-    async_add_entities([YN360Light(config.uuid, config.control_uuid)])
+    async_add_entities([YN360Light(config["uuid"], config["control_uuid"])])
 
 
 class YN360Light(LightEntity):

@@ -10,11 +10,15 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_ACCESS_TOKEN, CONF_URL
 from homeassistant.helpers import config_validation as cv
 
+import logging
+
 from .const import DOMAIN
 
 AUTH_SCHEMA = vol.Schema(
     {vol.Required(CONF_ACCESS_TOKEN): cv.string, vol.Optional(CONF_URL): cv.string}
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -24,8 +28,6 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle user initiation."""
-        print("Hello????")
-
         return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA, errors={})
         # return await self.async_step_bluetooth()
 
@@ -34,6 +36,7 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Get Bluetooth stuff somehow."""
         if discovery_info:
+            LOGGER.info("|".join([str(x) for x in dir(discovery_info)]))
             uuid = discovery_info.address
             await self.async_set_unique_id(uuid)
             self._abort_if_unique_id_configured()
@@ -46,7 +49,8 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         devices = {device.address: device.name for device in discovered_devices}
         if not devices:
             return self.async_abort(reason="No devices found")
+
         return self.async_show_form(
-            step_id="Bluetooth",
+            step_id="bluetooth",
             data_schema=vol.Schema({vol.Required("device"): vol.In(devices)}),
         )

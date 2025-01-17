@@ -7,9 +7,14 @@ import voluptuous as vol
 
 from homeassistant.components.bluetooth import async_discovered_service_info
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.const import CONF_ACCESS_TOKEN, CONF_URL
 from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
+
+AUTH_SCHEMA = vol.Schema(
+    {vol.Required(CONF_ACCESS_TOKEN): cv.string, vol.Optional(CONF_URL): cv.string}
+)
 
 
 class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -20,7 +25,9 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Handle user initiation."""
         print("Hello????")
-        return await self.async_step_bluetooth()
+
+        return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA, errors={})
+        # return await self.async_step_bluetooth()
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak = None
@@ -34,16 +41,12 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title=discovery_info.name, data={"address": uuid}
             )
-        else:
-            discovered_devices = async_discovered_service_info(self.hass)
-            devices = {device.address: device.name for device in discovered_devices}
-            if not devices:
-                return self.async_abort(reason="No devices found")
-            return self.async_show_form(
-                step_id="Bluetooth",
-                data_schema=vol.Schema({vol.Required("device"): vol.In(devices)}),
-            )
 
-    async def async_step_import(self, user_input=None) -> ConfigFlowResult:
-        """Import a YAML config import if available."""
-        return await self.async_step_user(user_input)
+        discovered_devices = async_discovered_service_info(self.hass)
+        devices = {device.address: device.name for device in discovered_devices}
+        if not devices:
+            return self.async_abort(reason="No devices found")
+        return self.async_show_form(
+            step_id="Bluetooth",
+            data_schema=vol.Schema({vol.Required("device"): vol.In(devices)}),
+        )

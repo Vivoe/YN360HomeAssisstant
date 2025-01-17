@@ -58,12 +58,14 @@ class YN360Light(LightEntity):
     async def async_turn_on(self, **kwargs):
         """Turn on."""
         async with BleakClient(self._ble_client) as client:
+            LOGGER.debug("Turning on with payload: %s", self._state_payload)
             await self.send_payload(client, [PAYLOAD_FLUSH, self._state_payload])
             self._state = True
 
     async def async_turn_off(self, **kwargs):
         """Turn off."""
         async with BleakClient(self._ble_client) as client:
+            LOGGER.debug("Turning off with payload: %s", PAYLOAD_OFF)
             await self.send_payload(client, [PAYLOAD_FLUSH, PAYLOAD_OFF])
             self._state = False
 

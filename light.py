@@ -36,6 +36,7 @@ class YN360Light(LightEntity):
     def __init__(self, ble_client, uuid, control_uuid) -> None:
         """Initialize the light."""
         self._name = "YN360_" + uuid
+        self._state = False
         self._ble_client = ble_client
         self._control_uuid = control_uuid
         self._state_payload = PAYLOAD_ON_DEFAULT
@@ -58,11 +59,13 @@ class YN360Light(LightEntity):
         """Turn on."""
         async with BleakClient(self._ble_client) as client:
             await self.send_payload(client, [PAYLOAD_FLUSH, self._state_payload])
+            self._state = True
 
     async def async_turn_off(self, **kwargs):
         """Turn off."""
         async with BleakClient(self._ble_client) as client:
             await self.send_payload(client, [PAYLOAD_FLUSH, PAYLOAD_OFF])
+            self._state = False
 
     def turn_on(self, **kwargs):
         """Turn on, but not implemented."""
@@ -71,3 +74,8 @@ class YN360Light(LightEntity):
     def turn_off(self, **kwargs):
         """Turn off, but not implemented."""
         raise NotImplementedError("Using async instead of turn_off")
+
+    @property
+    def is_on(self):
+        """Is on."""
+        return self._state

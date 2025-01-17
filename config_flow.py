@@ -1,7 +1,9 @@
 """Test file."""
 
+import logging
 from typing import Any
 
+from bleak import BleakClient
 from habluetooth import BluetoothServiceInfoBleak
 import voluptuous as vol
 
@@ -9,8 +11,6 @@ from homeassistant.components.bluetooth import async_discovered_service_info
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_ACCESS_TOKEN, CONF_URL
 from homeassistant.helpers import config_validation as cv
-
-import logging
 
 from .const import DOMAIN
 
@@ -44,9 +44,23 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="No devices found")
 
         device = device[0]
-
         uuid = device.address
+
+        found_control = False
+        control_uuid = None
+        async with BleakClient(uuid) as client:
+            for service in client.services:
+                for characteristic in service.characteristics:
+                    if "write" in characteristic.properties:
+                        control_uuid = characteristic.uuid
+                        found_control = True
+
+        if not found_control:
+            return self.async_abort(reason="No control characteristic found")
+
         await self.async_set_unique_id(uuid)
         self._abort_if_unique_id_configured()
 
-        return self.async_create_entry(title=device.name, data={"address": uuid})
+        return self.async_create_entry(
+            title=device.name, data={"uuid": uuid, "control_uuid": control_uuid}
+        )

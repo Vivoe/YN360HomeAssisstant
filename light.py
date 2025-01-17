@@ -13,11 +13,12 @@ LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant, config_entry: ConfigEntry, async_add_entities
-) -> None:
+) -> bool:
     """Set up the YN360 light platform."""
     config = hass.data[DOMAIN][config_entry.entry_id]
     LOGGER.error(str(config))
-    async_add_entities([YN360Light(config["uuid"], config["control_uuid"])])
+    await async_add_entities([YN360Light(config["uuid"], config["control_uuid"])])
+    return True
 
 
 class YN360Light(LightEntity):

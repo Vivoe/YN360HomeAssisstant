@@ -26,6 +26,7 @@ async def async_setup_entry(
 
 
 async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Clean up leftover devices."""
     if entry.entry_id in hass.data[DOMAIN]:
         del hass.data[DOMAIN][entry.entry_id]
 
@@ -36,6 +37,7 @@ class YN360Light(LightEntity):
     def __init__(self, ble_client, uuid, control_uuid) -> None:
         """Initialize the light."""
         self._name = "YN360_" + uuid
+        self._uuid = uuid
         self._state = False
         self._ble_client = ble_client
         self._control_uuid = control_uuid
@@ -81,3 +83,8 @@ class YN360Light(LightEntity):
     def is_on(self):
         """Is on."""
         return self._state
+
+    @property
+    def unique_id(self):
+        """Unique ID."""
+        return self._uuid

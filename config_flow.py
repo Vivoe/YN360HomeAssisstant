@@ -5,18 +5,11 @@ from typing import Any
 
 from bleak import BleakClient
 from habluetooth import BluetoothServiceInfoBleak
-import voluptuous as vol
 
 from homeassistant.components.bluetooth import async_discovered_service_info
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
-from homeassistant.const import CONF_ACCESS_TOKEN, CONF_URL
-from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
-
-AUTH_SCHEMA = vol.Schema(
-    {vol.Required(CONF_ACCESS_TOKEN): cv.string, vol.Optional(CONF_URL): cv.string}
-)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -28,7 +21,6 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle user initiation."""
-        # return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA, errors={})
         return await self.async_step_bluetooth()
 
     async def async_step_bluetooth(

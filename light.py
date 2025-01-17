@@ -21,16 +21,16 @@ async def async_setup_entry(
     config = hass.data[DOMAIN][config_entry.entry_id]
 
     ble_client = async_ble_device_from_address(hass, config["uuid"])
-    async_add_entities([YN360Light(ble_client, config["control_uuid"])])
+    async_add_entities([YN360Light(ble_client, config["uuid"], config["control_uuid"])])
     return True
 
 
 class YN360Light(LightEntity):
     """YN360 light entity."""
 
-    def __init__(self, ble_client, control_uuid) -> None:
+    def __init__(self, ble_client, uuid, control_uuid) -> None:
         """Initialize the light."""
-        self._name = "YN360"
+        self._name = "YN360_" + uuid
         self._ble_client = ble_client
         self._control_uuid = control_uuid
         self._state_payload = PAYLOAD_ON_DEFAULT

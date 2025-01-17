@@ -2,6 +2,8 @@
 
 import logging
 
+from bleak import BleakClient
+
 from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.components.light import LightEntity
 from homeassistant.config_entries import ConfigEntry
@@ -18,18 +20,18 @@ async def async_setup_entry(
     """Set up the YN360 light platform."""
     config = hass.data[DOMAIN][config_entry.entry_id]
 
-    client = async_ble_device_from_address(hass, config["uuid"])
-    async_add_entities([YN360Light(client, config["control_uuid"])])
+    ble_client = async_ble_device_from_address(hass, config["uuid"])
+    async_add_entities([YN360Light(ble_client, config["control_uuid"])])
     return True
 
 
 class YN360Light(LightEntity):
     """YN360 light entity."""
 
-    def __init__(self, client, control_uuid) -> None:
+    def __init__(self, ble_client, control_uuid) -> None:
         """Initialize the light."""
         self._name = "YN360"
-        self._client = client
+        self._ble_client = ble_client
         self._control_uuid = control_uuid
         self._state_payload = PAYLOAD_ON_DEFAULT
 
@@ -40,7 +42,8 @@ class YN360Light(LightEntity):
 
         for payload in payloads:
             data = bytes.fromhex(payload)
-            await self._client.write_gatt_char(self._control_uuid, data)
+            async with BleakClient(self._ble_client) as client:
+                await client.write_gatt_char(self._control_uuid, data)
 
     @property
     def name(self):

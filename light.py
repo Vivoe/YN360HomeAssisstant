@@ -2,8 +2,7 @@
 
 import logging
 
-from bleak import BleakClient
-
+from homeassistant.components.bluetooth import async_ble_device_from_address
 from homeassistant.components.light import LightEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -18,29 +17,30 @@ async def async_setup_entry(
 ) -> bool:
     """Set up the YN360 light platform."""
     config = hass.data[DOMAIN][config_entry.entry_id]
-    LOGGER.error(str(config))
-    async_add_entities([YN360Light(config["uuid"], config["control_uuid"])])
+
+    client = async_ble_device_from_address(hass, config["uuid"])
+    async_add_entities([YN360Light(client, config["control_uuid"])])
     return True
 
 
 class YN360Light(LightEntity):
     """YN360 light entity."""
 
-    def __init__(self, uuid, control_uuid) -> None:
+    def __init__(self, client, control_uuid) -> None:
         """Initialize the light."""
         self._name = "YN360"
-        self._uuid = uuid
+        self._client = client
         self._control_uuid = control_uuid
-        self.state_payload = PAYLOAD_ON_DEFAULT
+        self._state_payload = PAYLOAD_ON_DEFAULT
 
-    async def send_payload(self, client, payloads):
+    async def send_payload(self, payloads):
         """Send a hex payload to the device."""
         if not isinstance(payloads, list):
             payloads = [payloads]
 
         for payload in payloads:
             data = bytes.fromhex(payload)
-            await client.write_gatt_char(self._control_uuid, data)
+            await self._client.write_gatt_char(self._control_uuid, data)
 
     @property
     def name(self):
@@ -49,13 +49,11 @@ class YN360Light(LightEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn on."""
-        async with BleakClient(self._uuid) as client:
-            await self.send_payload(client, [PAYLOAD_FLUSH, self.state_payload])
+        await self.send_payload([PAYLOAD_FLUSH, self._state_payload])
 
     async def async_turn_off(self, **kwargs):
         """Turn off."""
-        async with BleakClient(self._uuid) as client:
-            await self.send_payload(client, [PAYLOAD_FLUSH, PAYLOAD_OFF])
+        await self.send_payload([PAYLOAD_FLUSH, PAYLOAD_OFF])
 
     def turn_on(self, **kwargs):
         """Turn on, but not implemented."""

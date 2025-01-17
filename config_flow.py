@@ -28,8 +28,8 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Handle user initiation."""
-        return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA, errors={})
-        # return await self.async_step_bluetooth()
+        # return self.async_show_form(step_id="user", data_schema=AUTH_SCHEMA, errors={})
+        return await self.async_step_bluetooth()
 
     async def async_step_bluetooth(
         self, discovery_info: BluetoothServiceInfoBleak = None

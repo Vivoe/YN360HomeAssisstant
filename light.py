@@ -87,4 +87,4 @@ class YN360Light(LightEntity):
     @property
     def unique_id(self):
         """Unique ID."""
-        return self._uuid
+        return "yn360_" + self._uuid

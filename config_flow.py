@@ -32,8 +32,13 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         device = [
             device for device in discovered_devices if device.name == "YONGNUO LED"
         ]
-        if len(device) != 1:
+        if len(device) < 1:
             return self.async_abort(reason="No devices found")
+        if len(device) > 1:
+            matched_device_names = ", ".join([device.name for device in device])
+            return self.async_abort(
+                reason=f"Multiple devices found, matched devices: {matched_device_names}"
+            )
 
         device = device[0]
         uuid = device.address

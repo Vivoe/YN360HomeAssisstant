@@ -6,6 +6,10 @@ from typing import Any
 from bleak import BleakClient
 from habluetooth import BluetoothServiceInfoBleak
 
+import voluptuous as vol
+from homeassistant import config_entries
+import homeassistant.helpers.config_validation as cv
+
 from homeassistant.components.bluetooth import async_discovered_service_info
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 
@@ -23,24 +27,37 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         """Handle user initiation."""
         return await self.async_step_bluetooth()
 
-    async def async_step_bluetooth(
-        self, discovery_info: BluetoothServiceInfoBleak = None
-    ) -> ConfigFlowResult:
+    async def async_step_bluetooth(self, discovery_info=None) -> ConfigFlowResult:
         """Get Bluetooth stuff somehow."""
 
-        discovered_devices = async_discovered_service_info(self.hass)
-        device = [
-            device for device in discovered_devices if device.name == "YONGNUO LED"
-        ]
-        if len(device) < 1:
-            return self.async_abort(reason="No devices found")
-        if len(device) > 1:
-            matched_device_names = ", ".join([device.name for device in device])
-            return self.async_abort(
-                reason=f"Multiple devices found, matched devices: {matched_device_names}"
+        if discovery_info is None or discovery_info["refresh"]:
+            discovered_devices = async_discovered_service_info(self.hass)
+            devices = {
+                device.address: device.name
+                for device in discovered_devices
+                if device.name == "YONGNUO LED"
+            }
+            schema = vol.Schema(
+                {
+                    vol.Optional("devices"): cv.multi_select(devices),
+                    vol.Optional("refresh"): bool,
+                }
             )
 
-        device = device[0]
+            return self.async_show_form(step_id="bluetooth", data_schema=schema)
+
+        # if len(device) < 1:
+        #     return self.async_abort(reason="No devices found")
+        # if len(device) > 1:
+        #     matched_device_names = ", ".join([device.name for device in device])
+        #     return self.async_abort(
+        #         reason=f"Multiple devices found, matched devices: {matched_device_names}"
+        #     )
+
+        LOGGER.error(str(discovery_info))
+
+        # device = device[0]
+        device = None
         uuid = device.address
 
         found_control = False

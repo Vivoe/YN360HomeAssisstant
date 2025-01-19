@@ -29,42 +29,29 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
 
         LOGGER.error(str(discovery_info))
 
-        if discovery_info is None or discovery_info["action"] == "add_and_refresh":
-            if discovery_info is not None:
-                known_devices = discovery_info["devices"]
-            else:
-                known_devices = []
-
+        if discovery_info is None:
             discovered_devices = async_discovered_service_info(self.hass)
             devices = {
                 device.address: f"{device.name}: {device.address}"
                 for device in discovered_devices
-                if device.name == "YONGNUO LED" and device.address not in known_devices
+                if device.name == "YONGNUO LED"
             }
             schema = vol.Schema(
                 {
-                    vol.Optional("devices"): cv.multi_select(devices),
-                    vol.Required("action"): vol.In(["add_and_refresh", "submit"]),
+                    vol.Required("devices"): cv.multi_select(devices)
                 }
             )
 
-            if len(known_devices) > 0:
-                desc = "\n".join(["Identified devices:", *known_devices])
-            else:
-                desc = None
-
-            LOGGER.error(desc)
             return self.async_show_form(
                 step_id="bluetooth",
-                data_schema=schema,
-                description_placeholders={"desc": desc},
+                data_schema=schema
             )
 
         data = {}
         data["uuids"] = discovery_info["devices"]
         data["control_uuids"] = {}
 
-        for uuid in devices:  # devices is already list of uuid
+        for uuid in data['uuids']:  # devices is already list of uuid
             found_control = False
             async with BleakClient(uuid) as client:
                 for service in client.services:
@@ -83,4 +70,5 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         await self.async_set_unique_id(uid)
         self._abort_if_unique_id_configured()
 
+        LOGGER.error(data)
         return self.async_create_entry(title="YN360", data=data)

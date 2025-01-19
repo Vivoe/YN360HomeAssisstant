@@ -2,13 +2,17 @@
 
 import logging
 
-from bleak import BleakClient, BleakError
-
-from homeassistant.components.light import LightEntity
+from homeassistant.components.light import (
+    ATTR_BRIGHTNESS,
+    ATTR_COLOR_TEMP_KELVIN,
+    ATTR_RGB_COLOR,
+    ColorMode,
+    LightEntity,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, PAYLOAD_OFF, PAYLOAD_ON_DEFAULT
+from .const import DOMAIN, PAYLOAD_OFF
 
 LOGGER = logging.getLogger(__name__)
 
@@ -36,8 +40,12 @@ class YN360Light(LightEntity):
         self._entry_data = entry_data
         self._name = "YN360_" + entry_data["uid"]
         self._state = False
-        self._state_payload = PAYLOAD_ON_DEFAULT
         self._most_recent_device = self._entry_data["uuids"][0]
+
+        self._brightness = 255
+        self._color_mode = ColorMode.ONOFF
+        self._color_temp = 5600
+        self._rgb = (255, 255, 255)
 
     def get_uuid_order(self):
         """Return the uuids in the order that should be tested."""
@@ -46,23 +54,7 @@ class YN360Light(LightEntity):
         uuids.insert(0, self._most_recent_device)
         return uuids
 
-    async def send_payload(self, uuid, payloads):
-        """Send a hex payload to the device."""
-        control_uuid = self._entry_data["control_uuids"][uuid]
-        if not isinstance(payloads, list):
-            payloads = [payloads]
-
-        try:
-            async with BleakClient(uuid, timeout=3) as client:
-                for payload in payloads:
-                    data = bytes.fromhex(payload)
-                    await client.write_gatt_char(control_uuid, data)
-        except TimeoutError:
-            LOGGER.debug("Could not connect to uuid %s due to timeout", uuid)
-        except BleakError as e:
-            LOGGER.error("Could not connect to uuid %s due to error: %s", uuid, e)
-
-    async def send_payload_all(self, payloads):
+    async def send_payload(self, payloads):
         """Send a hex payload to the device."""
         if not isinstance(payloads, list):
             payloads = [payloads]
@@ -84,30 +76,61 @@ class YN360Light(LightEntity):
         else:
             raise RuntimeError("Could not connect to any uuids")
 
-    @property
-    def name(self):
-        """Name."""
-        return self._name
+    def get_current_payload(self):
+        """Get the payload for the given parameters. Always assume channel 1."""
+        if not self.is_on:
+            return PAYLOAD_OFF
+
+        if self._color_mode == ColorMode.ONOFF:
+            payload = f"AEAA0100{255:02x}56"
+        if self._color_mode == ColorMode.BRIGHTNESS:
+            # Default to the warm lights for regular brightness.
+            payload = f"AEAA0100{self._brightness:02x}56"
+
+        elif self._color_mode == ColorMode.RGB:
+            r = self._rgb[0] * self._brightness / 255
+            g = self._rgb[1] * self._brightness / 255
+            b = self._rgb[2] * self._brightness / 255
+            rgb_str = f"{int(r):02x}{int(g):02x}{int(b):02x}"
+            payload = f"AEA1{rgb_str}56"
+
+        elif self._color_mode == ColorMode.COLOR_TEMP:
+            # 1 = Only use warm, 0 = only use cold.
+            temp_pct = (self._color_temp - 3200) / (5600 - 3200)
+            warm_led = int(self._brightness * temp_pct)
+            cold_led = int(self._brightness * (1 - temp_pct))
+            payload = f"AEAA01{cold_led:02x}{warm_led:02x}56"
+        else:
+            raise ValueError("Invalid color mode")
+
+        return payload
+
+    def update_state(self, **kwargs):
+        """Update the state based on the user input."""
+        if ATTR_BRIGHTNESS in kwargs:
+            self._brightness = kwargs[ATTR_BRIGHTNESS]
+            self._color_mode = ColorMode.BRIGHTNESS
+        if ATTR_RGB_COLOR in kwargs:
+            self._rgb = kwargs[ATTR_RGB_COLOR]
+            self._color_mode = ColorMode.RGB
+        if ATTR_COLOR_TEMP_KELVIN in kwargs:
+            self._color_temp = kwargs[ATTR_COLOR_TEMP_KELVIN]
+            self._color_mode = ColorMode.COLOR_TEMP
 
     async def async_turn_on(self, **kwargs):
         """Turn on."""
-        LOGGER.debug("Turning on with payload: %s", self._state_payload)
-        await self.send_payload_all(self._state_payload)
-        # tasks = [
-        #     self.send_payload(uuid, self._state_payload)
-        #     for uuid in self._entry_data["uuids"]
-        # ]
-        # await asyncio.gather(*tasks)
+        LOGGER.debug(str(kwargs))
+        self.update_state(**kwargs)
+        payload = self.get_current_payload()
+
+        LOGGER.debug("Turning on with payload: %s", payload)
+        await self.send_payload(payload)
         self._state = True
 
     async def async_turn_off(self, **kwargs):
         """Turn off."""
         LOGGER.debug("Turning off with payload: %s", PAYLOAD_OFF)
-        await self.send_payload_all(PAYLOAD_OFF)
-        # tasks = [
-        # self.send_payload(uuid, PAYLOAD_OFF) for uuid in self._entry_data["uuids"]
-        # ]
-        # await asyncio.gather(*tasks)
+        await self.send_payload(PAYLOAD_OFF)
         self._state = False
 
     def turn_on(self, **kwargs):
@@ -119,6 +142,26 @@ class YN360Light(LightEntity):
         raise NotImplementedError("Using async instead of turn_off")
 
     @property
+    def name(self):
+        """Name."""
+        return self._name
+
+    @property
+    def supported_color_modes(self):
+        """Supported color modes."""
+        return {
+            ColorMode.ONOFF,
+            ColorMode.BRIGHTNESS,
+            ColorMode.RGB,
+            ColorMode.COLOR_TEMP,
+        }
+
+    @property
+    def color_mode(self):
+        """Color mode."""
+        return self._color_mode
+
+    @property
     def is_on(self):
         """Is on."""
         return self._state
@@ -127,3 +170,23 @@ class YN360Light(LightEntity):
     def unique_id(self):
         """Unique ID."""
         return self._entry_data["uid"]
+
+    @property
+    def brightness(self):
+        """Brightness."""
+        return self._brightness
+
+    @property
+    def max_color_temp_kelvin(self):
+        """Max color temp."""
+        return 5600
+
+    @property
+    def min_color_temp_kelvin(self):
+        """Min color temp."""
+        return 3200
+
+    @property
+    def color_temp_kelvin(self):
+        """Color temp."""
+        return self._color_temp

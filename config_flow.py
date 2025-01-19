@@ -15,6 +15,7 @@ from .const import DOMAIN
 LOGGER = logging.getLogger(__name__)
 
 
+# pylint: disable=abstract-method
 class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
     """Config flow for YN360 Bluetooth RGB light."""
 
@@ -36,22 +37,15 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
                 for device in discovered_devices
                 if device.name == "YONGNUO LED"
             }
-            schema = vol.Schema(
-                {
-                    vol.Required("devices"): cv.multi_select(devices)
-                }
-            )
+            schema = vol.Schema({vol.Required("devices"): cv.multi_select(devices)})
 
-            return self.async_show_form(
-                step_id="bluetooth",
-                data_schema=schema
-            )
+            return self.async_show_form(step_id="bluetooth", data_schema=schema)
 
         data = {}
         data["uuids"] = discovery_info["devices"]
         data["control_uuids"] = {}
 
-        for uuid in data['uuids']:  # devices is already list of uuid
+        for uuid in data["uuids"]:  # devices is already list of uuid
             found_control = False
             async with BleakClient(uuid) as client:
                 for service in client.services:

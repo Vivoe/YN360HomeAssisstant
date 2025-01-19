@@ -282,4 +282,16 @@ class YN360Light(LightEntity):
 
     def get_eff_brightness(self):
         """Apply a calibration curve to make brightness feel more linear."""
-        return int(255 * (self._brightness / 255) ** 2)
+
+        # Piecewise linear.
+        # Piece one: half brightness up until 80%.
+        if self._brightness < 255 * 0.8:
+            return int(self._brightness / 2)
+
+        x1 = 255 * 0.8
+        y1 = 255 / 2
+        x2 = 255
+        y2 = 255
+        m = (y2 - y1) / (x2 - x1)
+        b = y1 - m * x1
+        return m * self._brightness + b

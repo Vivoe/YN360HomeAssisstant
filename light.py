@@ -19,10 +19,7 @@ async def async_setup_entry(
 ) -> bool:
     """Set up the YN360 light platform."""
     entry_data = hass.data[DOMAIN][config_entry.entry_id]
-    async_add_entities(YN360Light(entry_data))
-
-    # ble_client = async_ble_device_from_address(hass, config["uuid"])
-    # async_add_entities([YN360Light(ble_client, config["uuid"], config["control_uuid"])])
+    async_add_entities([YN360Light(entry_data)])
     return True
 
 
@@ -51,7 +48,9 @@ class YN360Light(LightEntity):
 
     async def get_clients(self):
         """Get all potential devices. Missing devices wil be filtered out."""
-        clients_all = [self.get_client(address) for address in self._entry_data["uuid"]]
+        clients_all = [
+            self.get_client(address) for address in self._entry_data["uuids"]
+        ]
         return [client for client in clients_all if client is not None]
 
     async def send_payload(self, clients, payloads):

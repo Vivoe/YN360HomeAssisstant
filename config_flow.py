@@ -57,7 +57,7 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
                 desc = None
 
             return self.async_show_form(
-                step_id="bluetooth", data_schema=schema, description_placeholders=desc
+                step_id="bluetooth", data_schema=schema, description=desc
             )
 
         # if len(device) < 1:

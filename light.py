@@ -39,34 +39,19 @@ class YN360Light(LightEntity):
         self._state = False
         self._state_payload = PAYLOAD_ON_DEFAULT
 
-    async def get_client(self, address):
-        """Attempt to get a BleakClient, returns None if cannot connect."""
-        try:
-            return BleakClient(address, timeout=1).connect()
-        except BleakError:
-            return None
-
-    async def get_clients(self):
-        """Get all potential devices. Missing devices wil be filtered out."""
-        clients_all = [
-            self.get_client(address) for address in self._entry_data["uuids"]
-        ]
-        return [client for client in clients_all if client is not None]
-
-    async def send_payload(self, clients, payloads):
+    async def send_payload(self, uuid, payloads):
         """Send a hex payload to the device."""
+        control_uuid = self._entry_data["control_uuid"][uuid.address]
         if not isinstance(payloads, list):
             payloads = [payloads]
 
-        for payload in payloads:
-            data = bytes.fromhex(payload)
-            tasks = [
-                client.write_gatt_char(
-                    self._entry_data["control_uuid"][client.address], data
-                )
-                for client in clients
-            ]
-            await asyncio.gather(*tasks)
+        try:
+            async with BleakClient(uuid, timeout=1) as client:
+                for payload in payloads:
+                    data = bytes.fromhex(payload)
+                    client.write_gatt_char(control_uuid, data)
+        except BleakError:
+            LOGGER.debug(f"Could not connect to uuid {uuid}")
 
     @property
     def name(self):
@@ -75,17 +60,22 @@ class YN360Light(LightEntity):
 
     async def async_turn_on(self, **kwargs):
         """Turn on."""
-        clients = await self.get_clients()
         LOGGER.debug("Turning on with payload: %s", self._state_payload)
-        await self.send_payload(clients, self._state_payload)
+        tasks = [
+            self.send_payload(uuid, self._state_payload)
+            for uuid in self._entry_data["uuids"]
+        ]
+        await asyncio.gather(*tasks)
         self._state = True
 
     async def async_turn_off(self, **kwargs):
         """Turn off."""
-        clients = await self.get_clients()
-        LOGGER.debug("Turning on with payload: %s", self._state_payload)
-        await self.send_payload(clients, PAYLOAD_OFF)
-        self._state = False
+        LOGGER.debug("Turning off with payload: %s", PAYLOAD_OFF)
+        tasks = [
+            self.send_payload(uuid, PAYLOAD_OFF) for uuid in self._entry_data["uuids"]
+        ]
+        await asyncio.gather(*tasks)
+        self._state = True
 
     def turn_on(self, **kwargs):
         """Turn on, but not implemented."""

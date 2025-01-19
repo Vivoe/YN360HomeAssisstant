@@ -33,11 +33,16 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         LOGGER.error(str(discovery_info))
 
         if discovery_info is None or discovery_info["action"] == "add_and_refresh":
+            if discovery_info is not None:
+                known_devices = discovery_info["devices"]
+            else:
+                known_devices = []
+
             discovered_devices = async_discovered_service_info(self.hass)
             devices = {
-                device.address: device.name
+                device.address: f"{device.name}: {device.address}"
                 for device in discovered_devices
-                if device.name == "YONGNUO LED"
+                if device.name == "YONGNUO LED" and device.address not in known_devices
             }
             schema = vol.Schema(
                 {
@@ -46,8 +51,8 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
                 }
             )
 
-            if isinstance(discovery_info, dict) and "devices" in discovery_info:
-                desc = "\n".join(["Identified devices: \n", *discovery_info["devices"]])
+            if len(known_devices) > 0:
+                desc = "\n".join(["Identified devices:", *known_devices])
             else:
                 desc = None
 

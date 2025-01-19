@@ -15,7 +15,7 @@ from homeassistant.components.light import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, PAYLOAD_OFF, PAYLOAD_FLUSH
+from .const import DOMAIN, PAYLOAD_FLUSH, PAYLOAD_OFF
 
 LOGGER = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class YN360Light(LightEntity):
                     data = bytes.fromhex(payload)
                     await client.write_gatt_char(control_uuid, data)
 
-                self.schedule_disconnect(10)
+                await self.schedule_disconnect(10)
                 LOGGER.debug("Successfully executed on uuid %s", uuid)
                 break
             except TimeoutError:
@@ -127,7 +127,7 @@ class YN360Light(LightEntity):
                 self._brightness,
             )
         else:
-            raise ValueError(f"Invalid color mode {str(self._color_mode)}")
+            raise ValueError(f"Invalid color mode {self._color_mode!s}")
 
         return payload
 

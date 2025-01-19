@@ -4,14 +4,11 @@ import logging
 from typing import Any
 
 from bleak import BleakClient
-from habluetooth import BluetoothServiceInfoBleak
-
 import voluptuous as vol
-from homeassistant import config_entries
-import homeassistant.helpers.config_validation as cv
 
 from homeassistant.components.bluetooth import async_discovered_service_info
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+import homeassistant.helpers.config_validation as cv
 
 from .const import DOMAIN
 
@@ -57,18 +54,11 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
                 desc = None
 
             return self.async_show_form(
-                step_id="bluetooth", data_schema=schema, description=desc
+                step_id="bluetooth",
+                data_schema=schema,
+                description_placeholders={"desc": desc},
             )
 
-        # if len(device) < 1:
-        #     return self.async_abort(reason="No devices found")
-        # if len(device) > 1:
-        #     matched_device_names = ", ".join([device.name for device in device])
-        #     return self.async_abort(
-        #         reason=f"Multiple devices found, matched devices: {matched_device_names}"
-        #     )
-
-        # device = device[0]
         data = {}
         data["uuids"] = discovery_info["devices"]
         data["control_uuids"] = {}

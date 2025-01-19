@@ -53,10 +53,10 @@ class YN360Light(LightEntity):
             payloads = [payloads]
 
         try:
-            async with BleakClient(uuid, timeout=1) as client:
+            async with BleakClient(uuid, timeout=3) as client:
                 for payload in payloads:
                     data = bytes.fromhex(payload)
-                    client.write_gatt_char(control_uuid, data)
+                    await client.write_gatt_char(control_uuid, data)
         except TimeoutError:
             LOGGER.debug("Could not connect to uuid %s due to timeout", uuid)
         except BleakError as e:
@@ -68,14 +68,15 @@ class YN360Light(LightEntity):
             payloads = [payloads]
 
         uuids = self.get_uuid_order()
+        LOGGING.debug("Trying uuids in order: %s", uuids)
         # No break, we try with all devices in the case they're not sync'd.
         for uuid in uuids:
             control_uuid = self._entry_data["control_uuids"][uuid]
             try:
-                async with BleakClient(uuid, timeout=1) as client:
+                async with BleakClient(uuid, timeout=3) as client:
                     for payload in payloads:
                         data = bytes.fromhex(payload)
-                        client.write_gatt_char(control_uuid, data)
+                        await client.write_gatt_char(control_uuid, data)
             except TimeoutError:
                 LOGGER.debug("Could not connect to uuid %s due to timeout", uuid)
 

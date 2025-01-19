@@ -91,19 +91,20 @@ class YN360Light(LightEntity):
             LOGGER.debug("[Payload] %s, IS_OFF", PAYLOAD_OFF)
             payload = PAYLOAD_OFF
 
+        eff_brightness = self.get_eff_brightness()
         if self._color_mode == ColorMode.ONOFF:
             payload = f"AEAA0100{255:02x}56"
             LOGGER.debug("[Payload] %s, ColorMode ONOFF", payload)
         elif self._color_mode == ColorMode.BRIGHTNESS:
             # Default to the warm lights for regular brightness.
-            payload = f"AEAA0100{self._brightness:02x}56"
+            payload = f"AEAA0100{eff_brightness:02x}56"
             LOGGER.debug(
-                "[Payload] %s, ColorMode BRIGHTNESS %s", payload, self._brightness
+                "[Payload] %s, ColorMode BRIGHTNESS %s", payload, eff_brightness
             )
         elif self._color_mode == ColorMode.RGB:
-            r = self._rgb[0] * self._brightness / 255
-            g = self._rgb[1] * self._brightness / 255
-            b = self._rgb[2] * self._brightness / 255
+            r = self._rgb[0] * eff_brightness / 255
+            g = self._rgb[1] * eff_brightness / 255
+            b = self._rgb[2] * eff_brightness / 255
             rgb_str = f"{int(r):02x}{int(g):02x}{int(b):02x}"
             payload = f"AEA1{rgb_str}56"
 
@@ -111,20 +112,20 @@ class YN360Light(LightEntity):
                 "[Payload] %s, ColorMode RGB %s, brightness %s",
                 payload,
                 self._rgb,
-                self._brightness,
+                eff_brightness,
             )
 
         elif self._color_mode == ColorMode.COLOR_TEMP:
             # 1 = Only use warm, 0 = only use cold.
             temp_pct = (self._color_temp - 3200) / (5600 - 3200)
-            cold_led = int(self._brightness * temp_pct)
-            warm_led = int(self._brightness * (1 - temp_pct))
+            cold_led = int(eff_brightness * temp_pct)
+            warm_led = int(eff_brightness * (1 - temp_pct))
             payload = f"AEAA01{cold_led:02x}{warm_led:02x}56"
             LOGGER.debug(
                 "[Payload] %s, ColorMode COLOR_TEMP %s, brightness %s",
                 payload,
                 self._color_temp,
-                self._brightness,
+                eff_brightness,
             )
         else:
             raise ValueError(f"Invalid color mode {self._color_mode!s}")
@@ -273,3 +274,7 @@ class YN360Light(LightEntity):
             LOGGER.debug("Disconnecting from device %s", self._client.address)
             await self._client.disconnect()
         self._client = None
+
+    def get_eff_brightness(self):
+        """Apply a calibration curve to make brightness feel more linear."""
+        return 255 * (self._brightness / 255) ** 2

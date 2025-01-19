@@ -2,6 +2,8 @@
 
 import logging
 
+from bleak import BleakClient
+
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_COLOR_TEMP_KELVIN,

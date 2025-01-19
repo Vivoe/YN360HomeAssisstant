@@ -1,5 +1,6 @@
 """YN360 Light integration for Home Assistant."""
 
+import asyncio
 import logging
 
 from bleak import BleakClient
@@ -49,6 +50,9 @@ class YN360Light(LightEntity):
         self._color_temp = 5600
         self._rgb = (255, 255, 255)
 
+        self.client = None
+        self._disconnect_task = None
+
     def get_uuid_order(self):
         """Return the uuids in the order that should be tested."""
         uuids = self._entry_data["uuids"].copy()
@@ -67,12 +71,15 @@ class YN360Light(LightEntity):
         for uuid in uuids:
             control_uuid = self._entry_data["control_uuids"][uuid]
             try:
-                async with BleakClient(uuid) as client:
-                    for payload in payloads:
-                        data = bytes.fromhex(payload)
-                        await client.write_gatt_char(control_uuid, data)
-                    LOGGER.debug("Successfully executed on uuid %s", uuid)
-                    break
+                # async with BleakClient(uuid) as client:
+                client = await self.connect(uuid)
+                for payload in payloads:
+                    data = bytes.fromhex(payload)
+                    await client.write_gatt_char(control_uuid, data)
+
+                self.schedule_disconnect(10)
+                LOGGER.debug("Successfully executed on uuid %s", uuid)
+                break
             except TimeoutError:
                 LOGGER.debug("Could not connect to uuid %s due to timeout", uuid)
         else:
@@ -209,3 +216,43 @@ class YN360Light(LightEntity):
     def color_temp_kelvin(self):
         """Color temp."""
         return self._color_temp
+
+    async def schedule_disconnect(self, delay):
+        """Schedule a disconnect after a delay."""
+        if self._disconnect_task:
+            self._disconnect_task.cancel()
+        self._disconnect_task = asyncio.create_task(self._disconnect_after_delay(delay))
+
+    async def _disconnect_after_delay(self, delay):
+        try:
+            await asyncio.sleep(delay)
+            await self.disconnect()
+        except asyncio.CancelledError:
+            # Handle the cancellation if needed
+            LOGGER.debug("Disconnect task cancelled")
+
+    async def connect(self, address):
+        """Connect to the device and get a client instance."""
+        if self.client is not None:
+            if self.client.address == address and self.client.is_connected:
+                return self.client
+
+            # If can't reuse connection, clean up and just make a new one.
+            if self.client.is_connected:
+                await self.client.disconnect()
+            else:
+                self.client = None
+
+            return await self.connect(address)
+
+        # New client
+        self.client = BleakClient(address)
+        await self.client.connect()
+        return self.client
+
+    async def disconnect(self):
+        """Disconnect from the device."""
+        if self.client and self.client.is_connected:
+            LOGGER.debug("Disconnecting from device %s", self.client.address)
+            await self.client.disconnect()
+        self.client = None

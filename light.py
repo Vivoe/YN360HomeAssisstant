@@ -3,7 +3,7 @@
 import asyncio
 import logging
 
-from bleak import BleakClient
+from bleak import BleakClient, BleakError
 
 from homeassistant.components.light import LightEntity
 from homeassistant.config_entries import ConfigEntry
@@ -51,7 +51,9 @@ class YN360Light(LightEntity):
                     data = bytes.fromhex(payload)
                     client.write_gatt_char(control_uuid, data)
         except TimeoutError:
-            LOGGER.debug("Could not connect to uuid %s", uuid)
+            LOGGER.debug("Could not connect to uuid %s due to timeout", uuid)
+        except BleakError as e:
+            LOGGER.error("Could not connect to uuid %s due to error: %s", uuid, e)
 
     @property
     def name(self):

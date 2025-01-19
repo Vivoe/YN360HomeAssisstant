@@ -121,7 +121,7 @@ class YN360Light(LightEntity):
                 self._brightness,
             )
         else:
-            raise ValueError("Invalid color mode")
+            raise ValueError(f"Invalid color mode {str(self._color_mode)}")
 
         return payload
 

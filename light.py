@@ -150,7 +150,8 @@ class YN360Light(LightEntity):
         payload = self.get_current_payload()
 
         LOGGER.debug("Turning on with payload: %s", payload)
-        await self.send_payload([PAYLOAD_FLUSH, payload])
+        # await self.send_payload([PAYLOAD_FLUSH, payload])
+        await self.send_payload([payload])
         self._state = True
 
     async def async_turn_off(self, **kwargs):
@@ -219,13 +220,16 @@ class YN360Light(LightEntity):
 
     async def schedule_disconnect(self, delay):
         """Schedule a disconnect after a delay."""
+        LOGGER.debug("Schedulling disconnect")
         if self._disconnect_task:
             self._disconnect_task.cancel()
         self._disconnect_task = asyncio.create_task(self._disconnect_after_delay(delay))
 
     async def _disconnect_after_delay(self, delay):
+        LOGGER.debug("Triggering disconect task")
         try:
             await asyncio.sleep(delay)
+            LOGGER.debug("Should be time to disconnect")
             await self.disconnect()
         except asyncio.CancelledError:
             # Handle the cancellation if needed

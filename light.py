@@ -110,8 +110,8 @@ class YN360Light(LightEntity):
         elif self._color_mode == ColorMode.COLOR_TEMP:
             # 1 = Only use warm, 0 = only use cold.
             temp_pct = (self._color_temp - 3200) / (5600 - 3200)
-            warm_led = int(self._brightness * temp_pct)
-            cold_led = int(self._brightness * (1 - temp_pct))
+            cold_led = int(self._brightness * temp_pct)
+            warm_led = int(self._brightness * (1 - temp_pct))
             payload = f"AEAA01{cold_led:02x}{warm_led:02x}56"
             LOGGER.debug(
                 "[Payload] %s, ColorMode COLOR_TEMP %s, brightness %s",

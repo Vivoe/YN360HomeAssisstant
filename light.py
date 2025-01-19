@@ -41,7 +41,7 @@ class YN360Light(LightEntity):
 
     async def send_payload(self, uuid, payloads):
         """Send a hex payload to the device."""
-        control_uuid = self._entry_data["control_uuid"][uuid.address]
+        control_uuid = self._entry_data["control_uuids"][uuid.address]
         if not isinstance(payloads, list):
             payloads = [payloads]
 

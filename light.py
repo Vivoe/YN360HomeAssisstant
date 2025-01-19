@@ -101,9 +101,10 @@ class YN360Light(LightEntity):
             payload = f"AEAA0100{255:02x}56"
             LOGGER.debug("[Payload] %s, ColorMode ONOFF", payload)
         elif self._color_mode == ColorMode.BRIGHTNESS:
-            # Default to the warm lights for regular brightness.
+            # Seems only the white/warm LEDs have the crappy light scaling issue...
             eff_brightness = int(eff_brightness / 2)
-            payload = f"AEAA0100{eff_brightness:02x}56"
+            # Use both white and warm LEDs. This is the max brightness mode.
+            payload = f"AEAA01{eff_brightness:02x}{eff_brightness:02x}56"
             LOGGER.debug(
                 "[Payload] %s, ColorMode BRIGHTNESS %s", payload, eff_brightness
             )

@@ -294,4 +294,4 @@ class YN360Light(LightEntity):
         y2 = 255
         m = (y2 - y1) / (x2 - x1)
         b = y1 - m * x1
-        return m * self._brightness + b
+        return int(m * self._brightness + b)

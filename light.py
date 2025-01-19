@@ -3,7 +3,7 @@
 import asyncio
 import logging
 
-from bleak import BleakClient
+from bleak import BleakClient, BleakError
 
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
@@ -252,8 +252,17 @@ class YN360Light(LightEntity):
             return await self.connect(address)
 
         # New client
-        self._client = BleakClient(address)
-        await self._client.connect()
+        most_recent_err = None
+        for i in range(3):
+            try:
+                self._client = BleakClient(address)
+                await self._client.connect()
+                break
+            except BleakError as e:
+                most_recent_err = e
+                await asyncio.sleep(1)
+        else:
+            raise most_recent_err
         return self._client
 
     async def disconnect(self):

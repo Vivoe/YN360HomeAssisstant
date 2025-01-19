@@ -1,6 +1,5 @@
 """YN360 Light integration for Home Assistant."""
 
-import asyncio
 import logging
 
 from bleak import BleakClient, BleakError
@@ -38,6 +37,14 @@ class YN360Light(LightEntity):
         self._name = "YN360_" + entry_data["uid"]
         self._state = False
         self._state_payload = PAYLOAD_ON_DEFAULT
+        self._most_recent_device = self._entry_data["uuids"][0]
+
+    def get_uuid_order(self):
+        """Return the uuids in the order that should be tested."""
+        uuids = self._entry_data["uuids"].copy()
+        uuids.remove(self._most_recent_device)
+        uuids.insert(0, self._most_recent_device)
+        return uuids
 
     async def send_payload(self, uuid, payloads):
         """Send a hex payload to the device."""
@@ -55,6 +62,23 @@ class YN360Light(LightEntity):
         except BleakError as e:
             LOGGER.error("Could not connect to uuid %s due to error: %s", uuid, e)
 
+    async def send_payload_all(self, payloads):
+        """Send a hex payload to the device."""
+        if not isinstance(payloads, list):
+            payloads = [payloads]
+
+        uuids = self.get_uuid_order()
+        # No break, we try with all devices in the case they're not sync'd.
+        for uuid in uuids:
+            control_uuid = self._entry_data["control_uuids"][uuid]
+            try:
+                async with BleakClient(uuid, timeout=1) as client:
+                    for payload in payloads:
+                        data = bytes.fromhex(payload)
+                        client.write_gatt_char(control_uuid, data)
+            except TimeoutError:
+                LOGGER.debug("Could not connect to uuid %s due to timeout", uuid)
+
     @property
     def name(self):
         """Name."""
@@ -63,20 +87,22 @@ class YN360Light(LightEntity):
     async def async_turn_on(self, **kwargs):
         """Turn on."""
         LOGGER.debug("Turning on with payload: %s", self._state_payload)
-        tasks = [
-            self.send_payload(uuid, self._state_payload)
-            for uuid in self._entry_data["uuids"]
-        ]
-        await asyncio.gather(*tasks)
+        await self.send_payload_all(self._state_payload)
+        # tasks = [
+        #     self.send_payload(uuid, self._state_payload)
+        #     for uuid in self._entry_data["uuids"]
+        # ]
+        # await asyncio.gather(*tasks)
         self._state = True
 
     async def async_turn_off(self, **kwargs):
         """Turn off."""
         LOGGER.debug("Turning off with payload: %s", PAYLOAD_OFF)
-        tasks = [
-            self.send_payload(uuid, PAYLOAD_OFF) for uuid in self._entry_data["uuids"]
-        ]
-        await asyncio.gather(*tasks)
+        await self.send_payload_all(PAYLOAD_OFF)
+        # tasks = [
+        # self.send_payload(uuid, PAYLOAD_OFF) for uuid in self._entry_data["uuids"]
+        # ]
+        # await asyncio.gather(*tasks)
         self._state = True
 
     def turn_on(self, **kwargs):

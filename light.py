@@ -258,6 +258,7 @@ class YN360Light(LightEntity):
 
     async def disconnect(self):
         """Disconnect from the device."""
+        LOGGER.debug("Trying to disconnect")
         if self._client and self._client.is_connected:
             LOGGER.debug("Disconnecting from device %s", self._client.address)
             await self._client.disconnect()

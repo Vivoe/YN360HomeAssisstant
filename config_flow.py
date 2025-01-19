@@ -55,7 +55,7 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
 
             LOGGER.error(desc)
             return self.async_show_form(
-                step_id="bluetooth_form",
+                step_id="bluetooth",
                 data_schema=schema,
                 description_placeholders={"desc": desc},
             )

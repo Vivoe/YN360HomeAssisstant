@@ -102,6 +102,7 @@ class YN360Light(LightEntity):
             LOGGER.debug("[Payload] %s, ColorMode ONOFF", payload)
         elif self._color_mode == ColorMode.BRIGHTNESS:
             # Default to the warm lights for regular brightness.
+            eff_brightness = int(eff_brightness / 2)
             payload = f"AEAA0100{eff_brightness:02x}56"
             LOGGER.debug(
                 "[Payload] %s, ColorMode BRIGHTNESS %s", payload, eff_brightness
@@ -121,6 +122,7 @@ class YN360Light(LightEntity):
             )
 
         elif self._color_mode == ColorMode.COLOR_TEMP:
+            eff_brightness = int(eff_brightness / 2)
             # 1 = Only use warm, 0 = only use cold.
             temp_pct = (self._color_temp - 3200) / (5600 - 3200)
             cold_led = int(eff_brightness * temp_pct)
@@ -282,16 +284,5 @@ class YN360Light(LightEntity):
 
     def get_eff_brightness(self):
         """Apply a calibration curve to make brightness feel more linear."""
-
-        # Piecewise linear.
-        # Piece one: half brightness up until 80%.
-        if self._brightness < 255 * 0.8:
-            return int(self._brightness / 2)
-
-        x1 = 255 * 0.8
-        y1 = 255 / 2
-        x2 = 255
-        y2 = 255
-        m = (y2 - y1) / (x2 - x1)
-        b = y1 - m * x1
-        return int(m * self._brightness + b)
+        # Why the fuck does it feel like it only goes up to 128???
+        return self._brightness

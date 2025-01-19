@@ -40,11 +40,21 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
             schema = vol.Schema(
                 {
                     vol.Optional("devices"): cv.multi_select(devices),
-                    vol.Optional("refresh"): bool,
+                    vol.Required("Action"): vol.In(
+                        ["Add device and refresh", "submit"]
+                    ),
                 }
             )
 
-            return self.async_show_form(step_id="bluetooth", data_schema=schema)
+            if isinstance(discovery_info, dict) and "devices" in discovery_info:
+                known_device_ids = [device.name for device in devices]
+                desc = "\n".join(["Identified devices: \n", *known_device_ids])
+            else:
+                desc = None
+
+            return self.async_show_form(
+                step_id="bluetooth", data_schema=schema, description_placeholders=desc
+            )
 
         # if len(device) < 1:
         #     return self.async_abort(reason="No devices found")

@@ -50,7 +50,7 @@ class YN360Light(LightEntity):
         self._color_temp = 5600
         self._rgb = (255, 255, 255)
 
-        self.client = None
+        self._client = None
         self._disconnect_task = None
 
     def get_uuid_order(self):
@@ -237,26 +237,28 @@ class YN360Light(LightEntity):
 
     async def connect(self, address):
         """Connect to the device and get a client instance."""
-        if self.client is not None:
-            if self.client.address == address and self.client.is_connected:
-                return self.client
-
+        if self._client is not None:
+            try:
+                if self._client.address == address and self._client.is_connected:
+                    return self._client
+            except AttributeError:
+                LOGGER.debug("BleakClient backend has no address")
             # If can't reuse connection, clean up and just make a new one.
-            if self.client.is_connected:
-                await self.client.disconnect()
+            if self._client.is_connected:
+                await self._client.disconnect()
             else:
-                self.client = None
+                self._client = None
 
             return await self.connect(address)
 
         # New client
-        self.client = BleakClient(address)
-        await self.client.connect()
-        return self.client
+        self._client = BleakClient(address)
+        await self._client.connect()
+        return self._client
 
     async def disconnect(self):
         """Disconnect from the device."""
-        if self.client and self.client.is_connected:
-            LOGGER.debug("Disconnecting from device %s", self.client.address)
-            await self.client.disconnect()
-        self.client = None
+        if self._client and self._client.is_connected:
+            LOGGER.debug("Disconnecting from device %s", self._client.address)
+            await self._client.disconnect()
+        self._client = None

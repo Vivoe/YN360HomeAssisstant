@@ -108,7 +108,7 @@ class YN360Light(LightEntity):
         # self.send_payload(uuid, PAYLOAD_OFF) for uuid in self._entry_data["uuids"]
         # ]
         # await asyncio.gather(*tasks)
-        self._state = True
+        self._state = False
 
     def turn_on(self, **kwargs):
         """Turn on, but not implemented."""

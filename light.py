@@ -255,6 +255,7 @@ class YN360Light(LightEntity):
         most_recent_err = None
         for i in range(3):
             try:
+                LOGGER.debug("Connecting to device %s, attempt %s", address, i)
                 self._client = BleakClient(address)
                 await self._client.connect()
                 break

@@ -47,8 +47,7 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
             )
 
             if isinstance(discovery_info, dict) and "devices" in discovery_info:
-                known_device_ids = [device.name for device in devices]
-                desc = "\n".join(["Identified devices: \n", *known_device_ids])
+                desc = "\n".join(["Identified devices: \n", *discovery_info["devices"]])
             else:
                 desc = None
 

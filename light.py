@@ -77,6 +77,7 @@ class YN360Light(LightEntity):
                     for payload in payloads:
                         data = bytes.fromhex(payload)
                         await client.write_gatt_char(control_uuid, data)
+                    break
             except TimeoutError:
                 LOGGER.debug("Could not connect to uuid %s due to timeout", uuid)
 

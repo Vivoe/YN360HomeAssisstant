@@ -6,7 +6,7 @@
                 "title": "Set up YN360",
                 "description": "Please follow the steps to set up your YN360 device."
             },
-            "bluetooth": {
+            "bluetooth_form": {
                 "title": "Bluetooth Setup",
                 "description": "{desc}",
                 "data": {

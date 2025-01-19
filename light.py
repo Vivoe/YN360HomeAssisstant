@@ -14,7 +14,7 @@ from homeassistant.components.light import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, PAYLOAD_OFF
+from .const import DOMAIN, PAYLOAD_OFF, PAYLOAD_FLUSH
 
 LOGGER = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class YN360Light(LightEntity):
         payload = self.get_current_payload()
 
         LOGGER.debug("Turning on with payload: %s", payload)
-        await self.send_payload(payload)
+        await self.send_payload([PAYLOAD_FLUSH, payload])
         self._state = True
 
     async def async_turn_off(self, **kwargs):

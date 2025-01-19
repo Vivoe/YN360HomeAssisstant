@@ -68,7 +68,7 @@ class YN360Light(LightEntity):
             payloads = [payloads]
 
         uuids = self.get_uuid_order()
-        LOGGING.debug("Trying uuids in order: %s", uuids)
+        LOGGER.debug("Trying uuids in order: %s", uuids)
         # No break, we try with all devices in the case they're not sync'd.
         for uuid in uuids:
             control_uuid = self._entry_data["control_uuids"][uuid]

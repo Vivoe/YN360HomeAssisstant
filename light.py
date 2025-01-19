@@ -92,6 +92,11 @@ class YN360Light(LightEntity):
             payload = PAYLOAD_OFF
 
         eff_brightness = self.get_eff_brightness()
+        LOGGER.debug(
+            "Input brightness: %s Effective brightness: %s",
+            self._brightness,
+            eff_brightness,
+        )
         if self._color_mode == ColorMode.ONOFF:
             payload = f"AEAA0100{255:02x}56"
             LOGGER.debug("[Payload] %s, ColorMode ONOFF", payload)
@@ -277,4 +282,4 @@ class YN360Light(LightEntity):
 
     def get_eff_brightness(self):
         """Apply a calibration curve to make brightness feel more linear."""
-        return 255 * (self._brightness / 255) ** 2
+        return int(255 * (self._brightness / 255) ** 2)

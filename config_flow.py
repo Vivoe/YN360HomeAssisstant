@@ -30,7 +30,9 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_bluetooth(self, discovery_info=None) -> ConfigFlowResult:
         """Get Bluetooth stuff somehow."""
 
-        if discovery_info is None or discovery_info["refresh"]:
+        LOGGER.error(str(discovery_info))
+
+        if discovery_info is None or discovery_info["action"] == "add_and_refresh":
             discovered_devices = async_discovered_service_info(self.hass)
             devices = {
                 device.address: device.name
@@ -40,9 +42,7 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
             schema = vol.Schema(
                 {
                     vol.Optional("devices"): cv.multi_select(devices),
-                    vol.Required("Action"): vol.In(
-                        ["Add device and refresh", "submit"]
-                    ),
+                    vol.Required("action"): vol.In(["add_and_refresh", "submit"]),
                 }
             )
 
@@ -64,31 +64,28 @@ class YN360ConfigFlow(ConfigFlow, domain=DOMAIN):
         #         reason=f"Multiple devices found, matched devices: {matched_device_names}"
         #     )
 
-        LOGGER.error(str(discovery_info))
-
         # device = device[0]
-        device = None
-        uuid = device.address
+        data = {}
+        data["uuids"] = discovery_info["devices"]
+        data["control_uuids"] = {}
 
-        found_control = False
-        control_uuid = None
-        async with BleakClient(uuid) as client:
-            for service in client.services:
-                for characteristic in service.characteristics:
-                    if "write" in characteristic.properties:
-                        control_uuid = characteristic.uuid
-                        found_control = True
+        for uuid in devices:  # devices is already list of uuid
+            found_control = False
+            async with BleakClient(uuid) as client:
+                for service in client.services:
+                    for characteristic in service.characteristics:
+                        if "write" in characteristic.properties:
+                            data["control_uuids"][uuid] = characteristic.uuid
+                            found_control = True
 
-        if not found_control:
-            return self.async_abort(reason="No control characteristic found")
+            if not found_control:
+                return self.async_abort(
+                    reason=f"No control characteristic found for device {uuid}"
+                )
 
-        await self.async_set_unique_id(uuid)
+        uid = "yn360_" + "_".join(sorted(data["uuids"]))
+        data["uid"] = uid
+        await self.async_set_unique_id(uid)
         self._abort_if_unique_id_configured()
 
-        return self.async_create_entry(
-            title=device.name, data={"uuid": uuid, "control_uuid": control_uuid}
-        )
-
-    def is_matching(self, other_flow: BluetoothServiceInfoBleak) -> bool:
-        """Check if discovery info matches the YN360 device."""
-        return other_flow.name == "YONGNUO LED"
+        return self.async_create_entry(title="YN360", data=data)

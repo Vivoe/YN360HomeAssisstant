@@ -87,13 +87,12 @@ class YN360Light(LightEntity):
         if self._color_mode == ColorMode.ONOFF:
             payload = f"AEAA0100{255:02x}56"
             LOGGER.debug("[Payload] %s, ColorMode ONOFF", payload)
-        if self._color_mode == ColorMode.BRIGHTNESS:
+        elif self._color_mode == ColorMode.BRIGHTNESS:
             # Default to the warm lights for regular brightness.
             payload = f"AEAA0100{self._brightness:02x}56"
             LOGGER.debug(
                 "[Payload] %s, ColorMode BRIGHTNESS %s", payload, self._brightness
             )
-
         elif self._color_mode == ColorMode.RGB:
             r = self._rgb[0] * self._brightness / 255
             g = self._rgb[1] * self._brightness / 255

@@ -73,7 +73,7 @@ class YN360Light(LightEntity):
         for uuid in uuids:
             control_uuid = self._entry_data["control_uuids"][uuid]
             try:
-                async with BleakClient(uuid, timeout=3) as client:
+                async with BleakClient(uuid) as client:
                     for payload in payloads:
                         data = bytes.fromhex(payload)
                         await client.write_gatt_char(control_uuid, data)
@@ -81,6 +81,8 @@ class YN360Light(LightEntity):
                     break
             except TimeoutError:
                 LOGGER.debug("Could not connect to uuid %s due to timeout", uuid)
+        else:
+            raise RuntimeError("Could not connect to any uuids")
 
     @property
     def name(self):
